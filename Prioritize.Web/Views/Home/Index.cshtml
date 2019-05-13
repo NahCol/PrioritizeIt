@@ -1,0 +1,970 @@
+﻿@model IEnumerable<Prioritize.Data.DItem>
+@{
+    ViewData["Title"] = "Index";
+}
+<div id="alert" class="alert alert-success alert-dismissible fade show" style="display: none">
+    <div style="padding: 5px;">
+        <a class="close" onclick="$('.alert').hide()">×</a>
+        <span id="message"></span>
+    </div>
+
+</div>
+<div id="Container">
+    <div class="table-responsive">
+        <table id="ToDoTable" class="table table-sm table-bordered table-striped table-hover table-responsive-sm" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th class="text-center">Actions</th>
+                    <th class="text-center">
+                        Priority<br />Order
+                    </th>
+                    <th class="text-center">
+                        Item<br />Id
+                    </th>
+                    <th class="text-center">
+                        Coder
+                    </th>
+                    <th class="text-center">
+                        Status
+                    </th>
+                    <th class="text-center">
+                        Priority Level
+                    </th>
+                    <th class="text-center">
+                        Due Date
+                    </th>
+                    <th class="text-center">
+                        Card<br />Number
+                    </th>
+                    <th class="text-center">
+                        Description
+                    </th>
+                    <th class="text-center">
+                        Link
+                    </th>
+                    <th class="text-center">
+                        Action
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="sortable"></tbody>
+        </table>
+    </div>
+</div>
+<div id="UpdateItemModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span id="TitlePre">Edit</span> Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="ModelContent">
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="form-group">
+                    <input id="SaveButton" type="button" value="Save" class="btn btn-primary" />
+                    <input id="CancelButton" type="button" value="Cancel" class="btn btn-primary" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+
+        OverLay.Show();
+
+
+        /* Create an array with the values of all the input boxes in a column */
+        $.fn.dataTable.ext.order['dom-text'] = function (settings, col) {
+            return this.api().column(col, { order: 'index' }).nodes().map(function (td, i) {
+                return $('input', td).val();
+            });
+        }
+
+        /* Create an array with the values of all the input boxes in a column, parsed as numbers */
+        $.fn.dataTable.ext.order['dom-text-numeric'] = function (settings, col) {
+            return this.api().column(col, { order: 'index' }).nodes().map(function (td, i) {
+                return $('input', td).val() * 1;
+            });
+        }
+
+        /* Create an array with the values of all the select options in a column */
+        $.fn.dataTable.ext.order['dom-select'] = function (settings, col) {
+            return this.api().column(col, { order: 'index' }).nodes().map(function (td, i) {
+                if ($('select', td).is(":visible")) {
+                    return $('select', td).val();
+                }
+
+                return $('label', td).text();
+
+
+
+            });
+        }
+
+        /* Create an array with the values of all the checkboxes in a column */
+        $.fn.dataTable.ext.order['dom-checkbox'] = function (settings, col) {
+            return this.api().column(col, { order: 'index' }).nodes().map(function (td, i) {
+                return $('input', td).prop('checked') ? '1' : '0';
+            });
+        }
+        $(document).ready(function () {
+            var IsDirty = false;
+            var Coders = [];
+            var PriorityLevels = [];
+            var Statuses = [];
+            var CanAssign = false;
+            var editDataIndex = -1;
+            var editItem = @ViewBag.EditItem;
+            var HostUrl = window.origin + window.location.pathname.replace(editItem,"");
+
+            var getStatus = function(){
+                var statuses = [];
+
+                $.each($(".Status:checked"), function (index, item) {
+                    statuses.push($(item).data("statusid"));
+                });
+
+                return statuses;
+            }
+
+            var getView = function () {
+                return $("input[name='view']:checked").attr("id");
+            }
+
+            $("#CancelButton").on("click", function () {
+
+                $("#UpdateItemModel").modal("hide");
+                $("#ModelContent").html("");
+                editItem = 0
+                editDataIndex = -1;
+                updateURL();
+            });
+
+            $("#Link").on("input", function () {
+                $("#checkUrl").attr("href", $(this).val());
+            });
+
+            $("#CreateNewToolTip").tooltip()
+
+            var SetDirty = function (dirty) {
+                IsDirty = dirty;
+                if (dirty) {
+                    $("#SaveChanges").addClass("active");
+                    $("#CreateNew").addClass("disabled");
+                    $("#CreateNewToolTip").tooltip("enable");
+                } else {
+                    $("#SaveChanges").removeClass("active");
+                    $("#CreateNew").removeClass("disabled");
+                    $("#CreateNewToolTip").tooltip("disable");
+                }
+            }
+
+            var showMessage = function (message, success) {
+                $("#alert").removeClass("alert-success");
+                $("#alert").removeClass("alert-info");
+                $("#alert").removeClass("alert-warning");
+                $("#alert").removeClass("alert-danger");
+                $("#message").html(message);
+
+                if (success && message) {
+                    $("#alert").addClass("alert-success");
+                    $("#alert").show();
+                    setTimeout(function () {
+                        $("#alert").hide();
+                    }, 5000);
+                }
+
+                if (!success && message) {
+                    $("#alert").addClass("alert-danger");
+                    $("#alert").show();
+                }
+
+
+            }
+
+            $("#SaveButton").on("click", function () {
+
+                OverLay.Show();
+
+                var fd = new FormData($("#EditForm")[0]);
+                var statuses = getStatus();
+
+
+                $.ajax({
+                    url: '@Url.Action("SaveItem")',
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    type: 'POST',
+                    success: function (data) {
+                        if (data.Success) {
+                            if (statuses.indexOf(data.Data.StatusId) > -1 ) {
+
+                                if (editDataIndex > -1) {
+                                    $ToDoTable.row(editDataIndex).data(data.Data).draw();
+                                } else {
+                                    $ToDoTable.row.add(data.Data).draw();
+                                };
+
+                            } else {
+                                $ToDoTable.row(editDataIndex).remove().draw()
+                            }
+                            var myIndex = 1
+                            $.each($ToDoTable.rows().data().sort((a, b) => (a.PriorityNumber > b.PriorityNumber) ? 1 : ((b.PriorityNumber > a.PriorityNumber) ? -1 : 0)), function (index, item) {
+                                item.PriorityNumber = myIndex++;
+                                $ToDoTable.rows(index).data(item);
+                            });
+
+                            var vm = {};
+
+                            vm.View = getView();
+                            vm.Status = getStatus();
+
+                            vm.Items = $ToDoTable.data().toArray();
+
+                            $.ajax({
+                                type: "POST",
+                                url: "@Url.Action("SavePage")",
+                                data: JSON.stringify(vm),
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                success: function (data) {
+                                }
+                            });
+
+                            $ToDoTable.rows().invalidate();
+
+                            RebindTable();
+                            editDataIndex = -1;
+
+                            $("#UpdateItemModel").modal('hide');
+                            $("#ModelContent").html("");
+
+                            showMessage(data.Message, true);
+                        } else {
+                            if (data.ErrorType == "ModelInvalid") {
+                                $(".validation-summary-errors").html(data.Message);
+                            } else {
+
+
+                                showMessage(data.Message, false);
+                                OverLay.Hide(true);
+                            }
+
+                        }
+                    },
+                    error: function (jqXHR, exception) {
+                        alert(exception);
+                    }
+                }).fail(function (jqXHR, exception) {
+                    alert("Your Car has been towed:" + exception);
+                }).always(function () {
+                    OverLay.Hide(true);
+                });
+            })
+
+
+
+            var LoadTable = function (data) {
+
+                Coders = data.Coders;
+                PriorityLevels = data.PriorityList;
+                CanAssign = data.CanAssign;
+                Statuses = data.Statuses;
+
+                $ToDoTable.clear().rows.add(data.items).draw();
+                window.scrollTo(0, 0);
+
+                $ToDoTable.column(1).visible(getStatus().length === 1 && getStatus()[0] === 1).draw();
+
+                DisableSorting(getView() != "ViewAll" || getStatus()[0] != 1);
+
+                SetDirty(false);
+
+                RebindTable();
+                var hideAll = editItem == 0;
+                if (editItem > 0) {
+                    OverLay.Show();
+                    ShowEdit(editItem);
+
+                    editItem = 0;
+                }
+                updateURL();
+                OverLay.Hide(hideAll);
+            };
+
+
+            var RebindTable = function () {
+
+                $(".CoderId").off("change");
+                $(".PriorityLevelId").off("change");
+                $(".StatusId").off("change");
+                $(".select").off("change");
+                $(".delete").off("click");
+
+                $(".CoderId").on("change", function () {
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+
+                    data.CoderId = $(this).val();
+
+                    if ($("#CoderId").val() == data.CoderId) {
+                        var select = $(row).find(".StatusId")
+                        var label = $(row).find(".StatusLabel")
+
+                        row.find(".StatusColumn").removeClass("reorder")
+                        row.find(".StatusColumn").removeClass("canreorder")
+
+                        label.removeClass("reorder");
+                        label.removeClass("canreorder");
+
+                        select.show();
+                        label.hide();
+                    } else {
+                        var select = $(row).find(".StatusId")
+                        var label = $(row).find(".StatusLabel")
+
+                        row.find(".StatusColumn").addClass("reorder");
+                        row.find(".StatusColumn").addClass("canreorder")
+
+                        label.addClass("reorder");
+                        label.addClass("canreorder");
+
+                        data.StatusId = select.data("originalid");
+                        select.val(data.StatusId);
+                        select.hide();
+                        label.show();
+                    }
+                    $ToDoTable.row(row).draw();
+                });
+
+                $(".PriorityLevelId").on("change", function () {
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+
+                    data.PriorityLevelId = $(this).val();
+
+                });
+
+                $(".StatusId").on("change", function () {
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+
+                    data.StatusId = $(this).val();
+
+                });
+
+
+                $("select").on("change", function () {
+                    SetDirty(true);
+                });
+
+                $(".delete").on("click", function () {
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+
+                    data.Active = !data.Active;
+                    SetDirty(true)
+                    if (data.Active) {
+                        $(this).html("<i class='far fa-window-close'></i>")
+                    } else {
+                        $(this).html("<i class='fas fa-window-close'></i>")
+                    }
+                });
+
+                $(".edit").on("click", function () {
+                    OverLay.Show();
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+                    editDataIndex = $ToDoTable.row(row).index();
+                    ShowEdit(data.Id);
+                });
+
+                $(".copy").on("click", function () {
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+                    CopyUrl(data.Id);
+                })
+
+                $(".DueDate").datepicker({
+                    showButtonPanel: true
+                });
+
+                $(".DueDate").on("change", function () {
+                    SetDirty(true);
+                    var row = $(this).parents("tr");
+                    var data = $ToDoTable.row(row).data();
+
+                    data.DueDate = $(this).val();
+
+                });
+
+            }
+
+
+
+
+            $("#UpdateItemModel").on("hidden.bs.modal", function () {
+                editItem = 0;
+                updateURL();
+            });
+
+            function fallbackCopyTextToClipboard(text) {
+                var textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+
+                try
+                {
+                    var successful = document.execCommand('copy');
+                    var msg = successful ? 'successful' : 'unsuccessful';
+                    console.log('Fallback: Copying text command was ' + msg);
+                }
+                catch (err)
+                {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+
+                document.body.removeChild(textArea);
+            }
+            function copyTextToClipboard(text) {
+                if (!navigator.clipboard)
+                {
+                    fallbackCopyTextToClipboard(text);
+                    return;
+                }
+                navigator.clipboard.writeText(text).then(function () {
+                    console.log('Async: Copying to clipboard was successful!');
+                }, function (err) {
+                    console.error('Async: Could not copy text: ', err);
+                });
+            }
+
+        var CopyUrl = function (id) {
+            var url = HostUrl + id;
+            copyTextToClipboard(url);
+
+            showMessage("Copied Url: " + url, true);
+        }
+
+            var ShowEdit = function (id) {
+                    $.post("@Url.Action("EditItem")", { Id: id }, function (data) {
+
+                        $("#TitlePre").text("Edit");
+                        $("#ModelContent").html(data);
+                        $("#Link").on("input", function () {
+                            $("#checkUrl").attr("href", $(this).val());
+                        });
+                        editItem = id;
+                        updateURL();
+
+                        $("#DueDate").datepicker();
+                        $("#UpdateItemModel").modal({ backdrop: 'static', focus: true, show: true });
+
+                        OverLay.Hide(true);
+                    });
+
+                }
+             var ShowCreate = function () {
+                    $.post("@Url.Action("CreateItem")", null, function (data) {
+
+                        $("#TitlePre").text("New");
+                        $("#ModelContent").html(data);
+                        $("#Link").on("input", function () {
+                            $("#checkUrl").attr("href", $(this).val());
+                        });
+
+                        $("#DueDate").datepicker();
+                        $("#UpdateItemModel").modal({ backdrop: 'static', focus: true, show: true });
+                        OverLay.Hide(true);
+                    });
+                }
+
+            var GetData = function () {
+
+                var view = getView();
+                var statuses = getStatus();
+
+                OverLay.Show();
+                $.post("@Url.Action("GetView")", { view: view, statuses: statuses }, function (data) {
+
+                    if (data.Success == true) {
+                        LoadTable(data);
+                        showMessage(data.Message, true);
+                    } else {
+                        showMessage(data.Message, false);
+                        OverLay.Hide(true);
+                    }
+                });
+            };
+
+            function updateURL() {
+                var url = HostUrl + (editItem == 0 ? "" : editItem);
+                console.log("Host: " + window.host);
+                console.log("Origin: " + window.origin);
+                console.log("Pathname: " + window.pathname);
+                console.log("hostname: " + window.hostname);
+                console.log("NewURl:" + url);
+                window.history.pushState('CRB Tasks', 'CRB Tasks', url);
+            }
+
+            $("#CreateNew").on("click", function () {
+                OverLay.Show();
+                ShowCreate();
+            })
+
+            var $ToDoTable = $("#ToDoTable").DataTable({
+                "language": {
+                    "info": "_MAX_ Records",
+                    "infoEmpty": "No records available",
+                    "infoFiltered": "(filtered from _MAX_ total records)"
+                },
+                "autoWidth": false,
+                "paging": false,
+                "order": [[1, "asc"]],
+                "dom": '<"row"<"col-md-4"<"toolbar">><"col-md-4 text-center"<i>><"col-md-4"f>>t',
+                "rowReorder": {
+                    dataSrc: 'PriorityNumber',
+                    selector: '.reorder'
+                },
+                columnDefs :[
+                    {
+                        "targets": [0],
+                        "data": "Id",
+                        "orderable": false,
+                        "searchable": false,
+                        "className": "text-left",
+                        "render": function (data, type, row, meta) {
+
+                            var anchor = document.createElement("a");
+                            anchor.className = "anchor";
+                            anchor.id = data;
+                            var deleteImage = "<span class='delete' title='Delete Item " + data + "'><i class='far fa-window-close'></i></span>"
+                            var editImage = "<span class='edit' title='Edit Item " + data + "'><i class='far fa-edit'></i></span>"
+                            var copyUrlImage = "<span class='copy' title='Copy URL for Item " + data + "'><i class='far fa-clipboard'></i></span>"
+                            return anchor.outerHTML + deleteImage + editImage + copyUrlImage;
+                        }
+                    },
+                    {
+                        "targets": [1],
+                        "data": "PriorityNumber",
+                        "orderable": true,
+                        "className": "reorder text-center canreorder",
+                        "searchable": true,
+                        "render": function (data, type, row, meta) {
+                            if (data === 0) {
+                                return "";
+                            } else {
+                                return data;
+                            }
+                        }
+                    },
+                    {
+                        "targets": [2],
+                        "data": "Id",
+                        "orderable": true,
+                        "className": "reorder text-center canreorder",
+                        "searchable": true
+                    },
+                    {
+                        "targets": [3],
+                        "data": "Coder",
+                        "orderDataType" : "dom-select",
+                        "orderable": true,
+                        "className" : "text-center",
+                        "createdRow": function (row, data, dataIndex) {
+                            if (CanAssign==false) {
+                                $(row).addClass('reorder canreorder');
+                            }
+                        },
+                        "searchable": true,
+                        "filter": function (data, type, row, meta) {
+                            if (data)
+                                return data.DisplayNameReversed;
+
+                            return "";
+                        },
+                        "render" : function (data, type, row, meta) {
+                                if (CanAssign==true) {
+
+                                    var select = document.createElement("SELECT");
+                                    select.className = "CoderId";
+
+                                    var index = 0;
+                                    var option = document.createElement("option");
+                                    select.add(option, index);
+                                    $.each(Coders, function (index, coder) {
+                                        option = document.createElement("option");
+                                        option.value = coder.Value;
+                                        option.text = coder.Text;
+                                        index++;
+                                        select.add(option, index);
+                                    })
+
+                                    if (data) {
+                                        select.value = data.Id;
+                                        var selectedOption = select.selectedOptions[0];
+                                        selectedOption.setAttribute("selected", "selected");
+                                    }
+
+
+
+                                    return select.outerHTML;
+                                } else {
+                                    if (data)
+                                        return data.DisplayNameReversed;
+
+                                    return "";
+                                }
+
+                            }
+                    },
+                    {
+                        "targets": [4],
+                        "data": "Status",
+                        "orderDataType": "dom-select",
+                        "orderable": true,
+                        "className":"text-left StatusColumn",
+                        "createdCell": function (cell, data, rowData) {
+                            if (rowData.Coder == null || $("#UserName").val() !== rowData.Coder.UserName.toUpperCase()) {
+                                $(cell).addClass('reorder canreorder');
+                            }
+                        },
+                        "searchable": true,
+                        "filter": function (data, type, row, meta) {
+                            if (data)
+                                return data.Text;
+
+                            return "";
+                        },
+                        "render": function (data, type, row, meta) {
+
+
+                                var select = document.createElement("SELECT");
+                                var label = document.createElement("Label");
+                                select.className = "StatusId";
+                                select.setAttribute("data-originalId", data.Id);
+
+                                label.className="StatusLabel";
+                                label.innerText = data.Text
+
+                            if ($("#CoderId").val() == row.CoderId) {
+                                label.style = "Display: None;"
+
+                            } else {
+                                select.style = "Display: None;"
+                                label.className = label.className + " reorder canreorder"
+                            }
+                                var option;
+                                $.each(Statuses, function (index, status) {
+                                    option = document.createElement("option");
+                                    option.value = status.Value;
+                                    option.text = status.Text;
+                                    index++;
+                                    select.add(option, index);
+                                })
+
+                                if (data) {
+                                    select.value = data.Id;
+                                    var selectedOption = select.selectedOptions[0];
+                                    selectedOption.setAttribute("selected", "selected");
+                                }
+
+                                return select.outerHTML + label.outerHTML;
+                              }
+                    },
+                    {
+                        "targets": [5],
+                        "data": "PriorityLevel",
+                        "orderable": true,
+                        "className": "text-center",
+                        "orderDataType": "dom-select",
+                        "searchable": true,
+                        "filter": "PriorityLevel.Text",
+                        "data": "PriorityLevel",
+                        "render": function (data, type, row, meta) {
+                                var select = document.createElement("SELECT");
+                                select.className = "PriorityLevelId";
+
+                                var index = 0;
+                                var option = document.createElement("option");
+                                select.add(option, index);
+
+                                $.each(PriorityLevels, function (index, coder) {
+                                    option = document.createElement("option");
+                                    option.value = coder.Value;
+                                    option.text = coder.Text;
+                                    index++;
+                                    select.add(option, index);
+                                })
+
+                                if (data) {
+                                    select.value = data.Id;
+                                    var selectedOption = select.selectedOptions[0];
+                                    selectedOption.setAttribute("selected", "selected");
+                                }
+
+                                return select.outerHTML;
+                        }
+                    },
+                    {
+                        "targets": [6],
+                        "data": "DueDate",
+                        "orderable": true,
+                        "className": "text-center",
+                        "orderDataType": "dom-text",
+                        "type": 'date',
+                        "searchable": true,
+                        "filter": "DueDate",
+                        "render": function (data, type, row, meta) {
+                            var textbox = document.createElement("INPUT");
+                            textbox.type = "text"
+                            textbox.className = "DueDate";
+
+                            if (data) {
+
+                                var date = moment(new Date(data)).format('MM/DD/YYYY');;
+
+                                textbox.setAttribute('value', date);
+                              }
+
+                            return textbox.outerHTML;
+                        }
+                    },
+
+                    {
+                        "targets": [7],
+                        "data": "CardNumber",
+                        "orderable": true,
+                        "className": "reorder text-center canreorder",
+                        "searchable": true
+                    },
+                    {
+                        "targets": [8],
+                        "data": "Description",
+                        "orderable": true,
+                        "className": "reorder text-left canreorder",
+                        "searchable": true,
+                        "width": "500px",
+                    },
+                    {
+                        "targets": [9],
+                        "data": "Link",
+                        "orderable": true,
+                        "className": "text-center",
+                        "createdRow": function (row, data, dataIndex) {
+                            if (!data) {
+                                $(row).addClass('reorder canreorder');
+                            }
+                        },
+                        "searchable": true,
+                        "filter": "Link",
+                        "render": function (data, type, row, meta) {
+
+                            if (data) {
+                                var link = document.createElement("a");
+                                link.href = data;
+                                link.title = data;
+                                link.target = "_blank";
+
+                                if (data.indexOf("trello") != -1) {
+                                    link.innerHTML = '<i class="fab fa-trello">';
+                                } else if (data.indexOf("startinfinity") != -1) {
+                                    link.innerHTML = '<i class="fas fa-infinity">';
+                                } else {
+                                    link.innerHTML = '<i class="fas fa-question-circle">';
+                                }
+
+                                return link.outerHTML;
+                            }
+                            return ""
+                        }
+                    },
+                    {
+                        "targets": [10],
+                        "data": "Action",
+                        "orderable": true,
+                        "className": "reorder canreorder",
+                        "searchable": true
+                    }
+
+                ],
+
+                "initComplete": function (settings, json) {
+
+                    $(".dataTables_filter input").on("input", function () {
+                        DisableSorting($(this).val() !== "")
+                    });
+
+                    $("div.toolbar").html("<span id='SortingDisabled' style='display: none;'> (Drag and Drop Sorting has been Disabled)</span>");
+                }
+            });
+
+            GetData();
+
+            $ToDoTable.on('order.dt', function () {
+
+                var view = getView();
+                var status = getStatus();
+
+                if (view == "ViewAll" || (status.length == 1 && status[0] == 1)) {
+                    if ($ToDoTable.order()[0][0] == 1 && $ToDoTable.order()[0][1] == "asc") {
+                        DisableSorting(false);
+                    } else {
+                        DisableSorting(true);
+                    }
+                };
+            });
+
+            $ToDoTable.on('row-reordered', function (e, diff, edit) {
+                var vm = {};
+
+                vm.View = getView();
+                vm.Status = getStatus();
+
+                vm.Items = $ToDoTable.data().toArray();
+
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("SaveOrder")",
+                    data: JSON.stringify(vm),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    success: function (data) {
+                        if (!data.Success) {
+                            showMessage(data.Message, false);
+                        }
+                    }
+                });
+            });
+
+
+
+            window.onbeforeunload = function (e) {
+                e = e || window.event;
+                if (IsDirty) {
+                    if (e) {
+                        e.returnValue = "You have unsaved changes.";
+                    }
+                    return "You have unsaved changes.";
+                }
+            };
+
+
+            function DisableSorting(disable) {
+                if (disable) {
+                    $(".reorder").removeClass("reorder");
+
+                    $("#SortingDisabled").show();
+                    $ToDoTable.rowReorder.disable();
+                } else {
+                    $(".canreorder").addClass("reorder");
+
+                    $("#SortingDisabled").hide();
+                    $ToDoTable.rowReorder.enable();
+                }
+            }
+
+            $(".View").on("change", function () {
+
+                if (IsDirty) {
+                        if (confirm("You have Unsaved Changes.  Continue?")) {
+                            GetData();
+                        } else {
+
+                        }
+                    } else {
+                    GetData();
+                    }
+            })
+
+            $(".Status").on("change", function () {
+
+
+                if (IsDirty) {
+                    if (confirm("You have Unsaved Changes.  Continue?")) {
+
+                        if ($(this).attr("id") === "StatusAll") {
+
+                            $(".StatusToDo:checked").attr('checked', false);
+                            $(".StatusInProgress:checked").attr('checked', false);
+                            $(".StatusDone:checked").attr('checked', false);
+
+                        } else {
+
+                            $(".StatusAll:checked").attr('checked', false);
+
+                        }
+
+                        GetData();
+                    } else {
+                    }
+                } else {
+
+                    if ($(this).attr("id") === "StatusAll") {
+
+                        $(".StatusToDo:checked").prop('checked', false).parent().removeClass('active');
+                        $(".StatusInProgress:checked").prop('checked', false).parent().removeClass('active');
+                        $(".StatusDone:checked").prop('checked', false).parent().removeClass('active');
+
+                    } else {
+
+                        $(".StatusAll:checked").prop('checked', false).parent().removeClass('active');
+
+                    }
+                    GetData();
+                }
+            });
+
+            $("#CancelChanges").on("click", function () {
+                GetData();
+            })
+
+
+        $("#SaveChanges").on("click", function () {
+            OverLay.Show();
+            var vm = {};
+
+            vm.View = getView();
+            vm.Status = getStatus();
+            vm.Items = $ToDoTable.data().toArray();
+
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("SavePage")",
+                data: JSON.stringify(vm),
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                success: function (data) {
+
+
+                    showMessage(data.Message, data.Success);
+
+                        if (data.Success === true) {
+
+                            LoadTable(data);
+                        }
+
+                    OverLay.Hide(true);
+                }
+            });
+        })
+    });
+    </script>
+
+}

@@ -1,0 +1,20 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Prioritize.Database/bin/Debug
+/Prioritize.Database/obj/Debug
+/.vs
+/Prioritize.Data/bin
+/Prioritize.Data/obj/Debug/netcoreapp2.2
+/Prioritize.Data/obj/Release/netcoreapp2.2
+/Prioritize.Data/obj
+bin
+/Prioritize.Database/Prioritize.Database.dbmdl
+/Prioritize.Database/Prioritize.Database.jfm
+obj
+obj
+PublishProfiles
+PublishProfiles
+obj
+*.user

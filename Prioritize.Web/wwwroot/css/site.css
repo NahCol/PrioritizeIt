@@ -1,0 +1,126 @@
+﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
+for details on configuring this project to bundle and minify static web assets. */
+body {
+    min-height: 90rem;
+    padding-top: 5.5rem;
+    margin-bottom: 70px;
+}
+a.navbar-brand {
+  white-space: normal;
+  text-align: center;
+  word-break: break-all;
+}
+a.anchor {
+    display: block;
+    position: relative;
+    top: -5.5rem;
+    visibility: hidden;
+}
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  font-size: 14px;
+}
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.border-top {
+  border-top: 1px solid #e5e5e5;
+}
+.border-bottom {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.box-shadow {
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+table{
+    font-size: smaller;
+}
+.table-striped > tbody > tr:nth-child(2n+1) > td, .table-striped > tbody > tr:nth-child(2n+1) > th {
+    background-color: lemonchiffon;
+}
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+    background-color: antiquewhite;
+}
+.card {
+    background-color: oldlace;
+    margin: 0px 5px 0px 5px;
+}
+.card-header {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 0px;
+    margin: 0px;
+    text-align: center;
+}
+
+.delete {
+    padding: 0px 5px 0px 0px;
+    border: 0px;
+    cursor: pointer;
+}
+
+.edit {
+    padding: 0px 5px 0px 0px;
+    border: 0px;
+    cursor: pointer;
+}
+
+.copy {
+    padding: 0px 5px 0px 0px;
+    border: 0px;
+    cursor: pointer;
+}
+
+.fa-window-close {
+    cursor: pointer;
+}
+.fa-edit {
+    cursor: pointer;
+}
+
+.card-body{
+    padding:0px;
+}
+.toolbar {
+    float: left;
+}
+
+.control-div {
+    padding: 5px 0px;
+    
+}
+
+.control-label{    
+    font-weight: bold;
+
+}
+
+.reorder{
+    cursor: move;
+}
+
+#alert {
+    position: fixed;
+    top: 6rem;
+    width: 99%;
+    z-index: 9999;
+}
+
+#message {
+    margin: 0 auto;
+}

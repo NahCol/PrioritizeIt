@@ -1,0 +1,135 @@
+﻿@{
+    Layout = "";
+}
+@model Prioritize.Data.DItem
+<div class="container-fluid">
+    <main role="main" class="pb-3">
+        <div class="row">
+            <div class="col-md-12">
+                <form id="EditForm" asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="Active" />
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Priority Order:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input asp-for="PriorityNumber" required type="number" class="form-control" />
+                            <span asp-validation-for="PriorityNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                    @if (Model.Id > 0)
+                    {
+                        <div class="row">
+                            <div class="col-md-3 text-right control-div">
+                                <label class="control-label">Item Id:</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input asp-for="Id" readonly class="form-control" />
+                                <span asp-validation-for="Id" class="text-danger"></span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-md-12">
+                                <input asp-for="Id" type="hidden" />
+                            </div>
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Coder:</label>
+                        </div>
+                        <div class="col-md-9">
+                            @if (ViewBag.CanAssign)
+                            {
+                                <select asp-for="CoderId" class="form-control" asp-items="ViewBag.Coders"><option></option></select>
+                                <span asp-validation-for="CoderId" class="text-danger"></span>
+                            }
+                            else
+                            {
+                                <label class="form-control">@Model.Coder.DisplayNameReversed</label>
+                                <input type="hidden" asp-for="CoderId" />
+                            }
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Status:</label>
+                        </div>
+                        <div class="col-md-9">
+
+                            @if (User.Identity.Name == Model.Coder?.UserName)
+                            {
+                                <select asp-for="StatusId" class="form-control" asp-items="ViewBag.Statuses"><option></option></select>
+                            }
+                            else
+                            {
+                                <label class="form-control">@Model.Status.Text</label>
+                                <input type="hidden" asp-for="StatusId" />
+                            }
+                            <span asp-validation-for="StatusId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Priority Level:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <select asp-for="PriorityLevelId" required class="form-control" asp-items="ViewBag.PriorityLevel"></select>
+                            <span asp-validation-for="PriorityLevelId" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Due Date:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input asp-for="DueDate" asp-format="{0:MM/dd/yyyy}" type="text" class="form-control" />
+                            <span asp-validation-for="DueDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Card Number:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input asp-for="CardNumber" maxlength="50" class="form-control" />
+                            <span asp-validation-for="CardNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Description:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <textarea asp-for="Description" type="text" class="form-control">@Model.Description</textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Link: <a href="@Model.Link" id="checkUrl" target="_blank" title="Click to open Url"><i class="fas fa-check-circle"></i></a></label>
+                        </div>
+                        <div class="col-md-9">
+                            <input asp-for="Link" class="form-control" />
+
+                            <span asp-validation-for="Link" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-right control-div">
+                            <label class="control-label">Action:</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input asp-for="Action" maxlength="50" class="form-control" />
+                            <span asp-validation-for="Action" class="text-danger"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>

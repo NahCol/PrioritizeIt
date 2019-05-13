@@ -1,0 +1,96 @@
+﻿@model IEnumerable<Prioritize.Data.DItem>
+@{
+    Layout = "";
+}
+<div class="table-responsive text-nowrap">
+    <table id="ToDoTable" class="table table-sm table-bordered table-striped table-hover table-responsive-sm">
+        <thead>
+            <tr>
+                <th>Delete</th>
+                <th></th>
+                <th>
+                    Priority Order
+                </th>
+                <th>
+                    Item Id
+                </th>
+                <th>
+                    Card Number
+                </th>
+                <th>
+                    Coder
+                </th>
+                <th>
+                    Priority Level
+                </th>
+                <th>
+                    Description
+                </th>
+                <th>
+                    Link
+                </th>
+                <th>
+                    Action
+                </th>
+            </tr>
+        </thead>
+        <tbody class="sortable">
+            @foreach (var item in Model)
+            {
+            <tr data-Id="@item.Id">
+                <td>
+                    <a class="anchor" id="@item.Id"></a>
+                    <input class="delete" type="checkbox" />
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                </td>
+                <td>
+                    <span class="SortNumber">@item.PriorityNumber</span>
+                </td>
+                <td>
+                    @item.Id
+                </td>
+                <td>
+                    @item.CardNumber
+                </td>
+                <td>
+                    @{
+                        if (ViewBag.CanAssign)
+                        {
+                            <select class="CoderId" asp-for="@item.CoderId" asp-items="@ViewBag.Coders">
+                                <option></option>
+                            </select>
+                        }
+                        else
+                        {
+                            @item.Coder?.DisplayName
+                        }
+                    }
+                </td>
+                <td>
+                    @item.PriorityLevel?.Text
+                </td>
+                <td>
+                    @item.Description
+                </td>
+                <td>
+                    @{
+                        if (!string.IsNullOrEmpty(item.Link) && item.Link.Contains("trello"))
+                        {
+                            <a href="@item.Link" target="_blank" title="@item.Link"><i class="fab fa-trello"></i></a>
+                        }
+                        else if (!string.IsNullOrEmpty(item.Link) && item.Link.Contains("startinfinity"))
+                        {
+                            <a href="@item.Link" target="_blank"><i class="fas fa-infinity"></i></a>
+                        }
+                    }
+                </td>
+                <td>
+                    @item.Action
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
