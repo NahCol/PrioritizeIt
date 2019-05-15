@@ -42,10 +42,22 @@ namespace Prioritize.Web.Controllers
             _itemService = itemService;
         }
 
-
+        [Route("")]
+        [Route("/Index")]
+        [Route("Home/{view:alpha=All}/{status:alpha=ToDo}/{id:int=0}/Index")]
+        [Route("Home/{id:int=0}/{view:alpha=All}/{status:alpha=ToDo}/Index")]
+        [Route("{id:int=0}/{view:alpha=All}/{status:alpha=ToDo}")]
+        [Route("{view:alpha=All}/{status:alpha=ToDo}/{id:int=0}/")]
         public IActionResult Index(int id, string view, string status)
         {
+            var ValidViews = new List<string>(){
+                   "All",
+                   "Mine",
+                   "UnAssigned"
+            };
 
+            var statusId = string.IsNullOrEmpty(status) ? 1 : _statusService.GetStatusByText(status)?.Id ?? 1;
+            ViewBag.Coders = GetCodersSelectList();
             ViewBag.IsIndex = true;
             ViewBag.EditItem = id;
             ViewBag.CoderId = _userService.GetCoderByUserName(User.Identity.Name)?.Id;
@@ -74,7 +86,7 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "PrioritizeIt Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json(new { Success = false, Message = $"That didn't go as planned.  Here's your Error Message: </br>{ex.ToString()}" });
                 throw;
             }
@@ -82,6 +94,7 @@ namespace Prioritize.Web.Controllers
         }
 
         [HttpPost]
+        [Route("EditItem")]
         public IActionResult EditItem(int Id)
         {
             try
@@ -96,7 +109,7 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "PrioritizeIt Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json(new { Success = false, Message = $"That didn't go as planned.  Here's your Error Message: </br>{ex.ToString()}" });
                 throw;
             }
@@ -104,6 +117,7 @@ namespace Prioritize.Web.Controllers
         }
 
         [HttpPost]
+        [Route("SavePage")]
         [Models.RequestSizeLimit(valueCountLimit: int.MaxValue)]
         public JsonResult SavePage([FromBody]SavePageViewModel savePageViewModel)
         {
@@ -126,13 +140,14 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "PrioritizeIt Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json(new { Success = false, Message = $"That didn't go as planned.  Here's your Error Message: </br>{ex.ToString()}" });
                 throw;
             }
         }
 
         [HttpPost]
+        [Route("SaveOrder")]
         [Models.RequestSizeLimit(valueCountLimit: int.MaxValue)]
         public JsonResult SaveOrder([FromBody]SavePageViewModel savePageViewModel)
         {
@@ -149,7 +164,7 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "PrioritizeIt Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json(new { Success = false, Message = $"Welp. That didn't work out. One Error Message Coming up!<br/>{ex.Message}" });
                 throw;
             }
@@ -157,8 +172,9 @@ namespace Prioritize.Web.Controllers
         }
 
 
+        [Route("GetView")]
         [HttpPost]
-        public JsonResult GetView(string view, List<int> statuses, string message, bool success)
+        public JsonResult GetView(List<string> view, List<int> statuses, string message, bool success)
         {
             try
             {
@@ -177,8 +193,6 @@ namespace Prioritize.Web.Controllers
                     PriorityList = GetPriorityLevelsSelectList(),
                     Statuses = GetStatusesSelectList(),
                     items = _itemService.GetItemsByView(view, statuses),
-                    View = view,
-                    ViewText = view.Replace("View", ""),
                     Status = statuses,
                     Success = string.IsNullOrEmpty(message) ? true: success,
                     Message = message
@@ -188,7 +202,7 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "Prioritize It Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json( new { Success = false, Message = $"Your Car has been Towed.  Ok, not really but something did go wrong.  I present to you your Error Message<br/>{ex.Message}"});
                 throw;
             }
@@ -197,6 +211,7 @@ namespace Prioritize.Web.Controllers
 
 
         [HttpPost]
+        [Route("SaveItem")]
         public JsonResult SaveItem(DItem item)
         {
             try
@@ -232,7 +247,7 @@ namespace Prioritize.Web.Controllers
             }
             catch (Exception ex)
             {
-                _emailService.SendEmail(new List<string>() { "" }, "PrioritizeIt Error", ex.Message);
+                _emailService.SendEmail(new List<string>() { "paul.marshall@deq.idaho.gov" }, "CRB Prioritize Error", ex.Message);
                 return Json(new { Success = false, ErrorType = "Fatal" , Message = $"This is the part where I say something witty about how this didn't work. I've run out of witty things so  &lt;Insert Witty Comment Here&gt;  &lt;Insert Your Assumed Chuckle Here&gt; and here's your Error Message:<br/>{ex.Message}" });
                 throw;
             }
@@ -240,6 +255,7 @@ namespace Prioritize.Web.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        [Route("Error")]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
@@ -266,6 +282,7 @@ namespace Prioritize.Web.Controllers
 
         private bool CanAssign() {
             return true;
+            //return _userService.CanAssign("deq\taslett");
         }
     }
 }

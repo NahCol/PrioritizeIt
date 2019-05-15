@@ -32,7 +32,7 @@ namespace Prioritize.Service
             Coders = _userService.GetCoders();
         }
 
-        public List<DItem> GetItemsByView(string view, List<int> statuses)
+        public List<DItem> GetItemsByView(List<string> view, List<int> statuses)
         {
             return _itemRepository.GetByView(GetViewItemsWhereClause(view, statuses, _httpContextAccessor.HttpContext.User.Identity.Name)).ToList();
         }
@@ -215,19 +215,27 @@ namespace Prioritize.Service
         }
 
 
-        private Expression<Func<DItem, bool>> GetViewItemsWhereClause(string view, List<int> statuses, string userName)
+        private Expression<Func<DItem, bool>> GetViewItemsWhereClause(List<string> view, List<int> statuses, string userName)
         {
-            switch (view)
+            if (view[0].Contains("View"))
             {
-                case "ViewAll":
-                    return c => c.Active && (statuses.Contains(c.StatusId) || statuses.Contains(0));
-                case "ViewMine":
-                    return c => c.Active && c.Coder.UserName == userName && (statuses.Contains(c.StatusId) || statuses.Contains(0));
-                case "ViewUnassigned":
-                    return c => c.Active && c.Coder == null && (statuses.Contains(c.StatusId) || statuses.Contains(0));
-                default:
-                    return c => c.Active && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+                switch (view[0])
+                {
+                    case "ViewAll":
+                        return c => c.Active && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+                    case "ViewMine":
+                        return c => c.Active && c.Coder.UserName == userName && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+                    case "ViewUnassigned":
+                        return c => c.Active && c.Coder == null && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+                    default:
+                        return c => c.Active && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+                }
             }
+            else
+            {
+                return c => c.Active && (c.CoderId.HasValue && view.Contains(c.CoderId.Value.ToString())) && (statuses.Contains(c.StatusId) || statuses.Contains(0));
+            }
+
         }
 
     }

@@ -7,7 +7,7 @@ namespace Prioritize.Web.Models
 {
     public class SavePageViewModel
     {
-        public string View { get; set; }
+        public List<string> View { get; set; }
         public List<int> Status { get; set; }
         public IEnumerable<ItemViewModel> Items {get;set;}
 

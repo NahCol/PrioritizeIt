@@ -78,7 +78,7 @@
 @section Scripts{
     <script type="text/javascript">
 
-        OverLay.Show();
+        //OverLay.Show();
 
 
         /* Create an array with the values of all the input boxes in a column */
@@ -136,8 +136,37 @@
             }
 
             var getView = function () {
-                return $("input[name='view']:checked").attr("id");
+
+                if ($("input[name='view']:checked").length > 0) {
+                    return [$("input[name='view']:checked").attr("id")];
+                }
+
+                var coder = [];
+
+                $.each($(".coderSelected.selected"), function (i, v) {
+                    coder.push($(v).data("coderid"));
+                });
+
+                return coder;
             }
+
+
+
+            $(".selectCoder").on("click", function () {
+
+                $(this).find(".coderSelected").toggle().toggleClass("selected");
+
+                if ($(".coderSelected.selected").length > 0) {
+                    $("input[name='view']:checked").prop("checked", false).parent().removeClass("active");
+                    $(".coderToggler").addClass("active");
+                    
+                } else {
+                    $("#ViewAll").prop("checked", true).parent().addClass("active");
+                    $(".coderToggler").removeClass("active");
+                }
+
+                GetData();
+            });
 
             $("#CancelButton").on("click", function () {
 
@@ -287,7 +316,7 @@
 
                 $ToDoTable.column(1).visible(getStatus().length === 1 && getStatus()[0] === 1).draw();
 
-                DisableSorting(getView() != "ViewAll" || getStatus()[0] != 1);
+                DisableSorting(getView()[0] != "ViewAll" || getStatus()[0] != 1);
 
                 SetDirty(false);
 
@@ -492,11 +521,11 @@
                 }
 
             var GetData = function () {
-
+                OverLay.Show();
                 var view = getView();
                 var statuses = getStatus();
 
-                OverLay.Show();
+                
                 $.post("@Url.Action("GetView")", { view: view, statuses: statuses }, function (data) {
 
                     if (data.Success == true) {
@@ -818,7 +847,7 @@
                 var view = getView();
                 var status = getStatus();
 
-                if (view == "ViewAll" || (status.length == 1 && status[0] == 1)) {
+                if (view[0] == "ViewAll" || (status.length == 1 && status[0] == 1)) {
                     if ($ToDoTable.order()[0][0] == 1 && $ToDoTable.order()[0][1] == "asc") {
                         DisableSorting(false);
                     } else {
@@ -879,6 +908,10 @@
             }
 
             $(".View").on("change", function () {
+
+                
+                $(".coderSelected").hide().removeClass("selected");
+                $(".coderToggler").removeClass("active");
 
                 if (IsDirty) {
                         if (confirm("You have Unsaved Changes.  Continue?")) {

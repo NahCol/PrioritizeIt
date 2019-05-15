@@ -1,17 +1,17 @@
 ﻿var OverLay = (function () {
     $.LoadingOverlaySetup({
-        
+        fontawesomeAutoResize: true,
         image: "",
         fontawesome: "fa fas fa-atom fa-spin"
         
     });
 
-    var Show = function () {
+    var Show = function (ele) {
         $.LoadingOverlay("show")
     }
 
-    var Hide = function (all) {
-        $.LoadingOverlay('hide', all)
+    var Hide = function (all, ele) {
+            $.LoadingOverlay('hide')
     }
 
 
